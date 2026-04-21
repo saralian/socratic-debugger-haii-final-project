@@ -17,3 +17,7 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.cm-highlighted-line {
+  background-color: #fef3c7 !important;
+}
