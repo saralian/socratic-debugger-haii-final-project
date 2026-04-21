@@ -2,7 +2,8 @@
 
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
-import { oneDark } from "@codemirror/theme-one-dark";
+import { githubLight } from "@uiw/codemirror-theme-github";
+import { xcodeLight } from "@uiw/codemirror-theme-xcode";
 
 interface CodeEditorProps {
   value: string;
@@ -22,7 +23,7 @@ export default function CodeEditor({
       <CodeMirror
         value={value}
         height={height}
-        theme={oneDark}
+        theme={xcodeLight}
         extensions={[python()]}
         editable={!readOnly}
         onChange={onChange}
