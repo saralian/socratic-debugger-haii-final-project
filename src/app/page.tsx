@@ -969,7 +969,7 @@ export default function Home() {
       {/* Phase banner */}
       <div className="border-b border-[var(--border)] bg-[var(--bg-surface)] px-8 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <h1 className="text-base font-semibold tracking-tight">Traceback: A Socratic Debugging Tutor</h1>
+          <h1 className="text-base font-semibold tracking-tight">Traceback: A Code Reasoning Tutor</h1>
           {/* Step indicator — all 3 steps always visible, active one highlighted */}
           <div className="flex items-center gap-1.5">
             {(["submit", "diagnose", "fix"] as Phase[]).map((p, i) => {
