@@ -1,0 +1,7 @@
+[
+  {
+    "date": "2026-04-22",
+    "bugCategory": "other",
+    "sessionMemory": "The student worked through an unintended arithmetic operation bug where a stray `- 1` at the end of the return statement always shifted the average one below the correct value. The student initially identified that the average wasn't calculating properly, then quickly narrowed in on the `- 1` once prompted to look at the return expression. The student demonstrated clear reasoning by articulating the correct average formula (sum / count) and explaining why the extra subtraction didn't belong."
+  }
+]
