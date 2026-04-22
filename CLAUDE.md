@@ -23,9 +23,14 @@ src/
     CodeEditor.tsx    # CodeMirror wrapper component
   lib/
     memory.ts         # read/write per-user session summaries
-    samples.ts        # canned code samples for Predict-Observe-Explain
+    # samples.ts     # (not yet implemented) canned code samples for Predict-Observe-Explain
 prompts.md            # system prompts for each API mode
 ```
+
+## Default seed code
+The Submit screen pre-loads a `find_max` function with an off-by-one error in its loop range (`range(1, len(numbers) - 1)` instead of `range(1, len(numbers))`), causing logic error. This makes a clean demo case: the symptom is a logic error, the bug is in a loop boundary, and the concept name (off-by-one error) is not obvious from the error message alone.
+
+To change the seed code, update the `SEED_CODE` constant at the top of `page.tsx`.
 
 ## Core design constraints — NEVER VIOLATE
 
@@ -98,13 +103,15 @@ The Fix phase has a split layout matching Diagnose: code panels on the left, tut
 - `sessionSummary`: string | null — generated at session end for storage in cross-session memory
 - `userId`: string — browser-local UUID identifying the user for memory storage
 - `isLoading`: boolean
+- `draftHypothesis`: { possibleCause: string } — local draft for the hypothesis form; kept separate from `workingHypothesis` so edits don't overwrite the committed hypothesis until the student saves
+- `hypothesisCardEditing`: boolean — true when the hypothesis card is in form/editing mode; false when pinned
 
 ## API route — /api/tutor
 - Server-side only. Anthropic API key lives in `.env.local` as `ANTHROPIC_API_KEY`
 - Accepts POST with `{ mode, code, originalCode, studentIntent, observedBehavior, conversationHistory, workingHypothesis, hypothesisHistory, diagnosisResult, userId }`
 - Returns structured JSON — see `prompts.md` for exact output schemas per mode
 - Modes (one system prompt each):
-  - `diagnose-init` — called when the student first submits code; receives `observedBehavior` along with the code and optional intent; returns internal `diagnosisResult` (not shown to student) plus the opening prompt for the hypothesis card
+  - `diagnose-init` — called when the student first submits code; receives `observedBehavior` along with the code and optional intent; returns internal `diagnosisResult` (not shown to student) plus `hypothesisPrompt` — a single neutral sentence shown above the hypothesis card that acknowledges the observation without leading toward the answer
   - `diagnose-hypothesis` — called when the student submits or revises a hypothesis, or sends a chat message; receives the current `observedBehavior` (which may have been edited since Submit); returns the tutor's Socratic response and, if applicable, a flag to trigger Predict-Observe-Explain with a sample ID
   - `diagnose-unsure` — called when the student clicks "I'm not sure" on the hypothesis card; returns a narrowing question to help them form a hypothesis through dialogue
   - `diagnose-commit` — called when the student clicks "I think I've got it" and confirms; evaluates whether articulation is sufficient; if yes, returns a tutor message naming the concept in chat (no separate UI card); if no, returns a gentle pushback and the student stays in Diagnose
@@ -127,6 +134,17 @@ This rule is enforced via system prompt, not just convention:
 - **Not allowed:** characterizing the student ("you always struggle with loops", "you tend to miss edge cases")
 
 Shared history supports the student. Characterization labels them. The distinction is the whole point of personalization being pedagogical rather than surveillant.
+
+## Component architecture
+All sub-components are defined as **top-level functions outside `Home`** to maintain stable React component identity across renders. Defining components inside `Home` causes unmount/remount on every keystroke, destroying input focus. The key top-level components are:
+
+- `InlineEditBlock` — reusable click-to-edit block used for both "What's happening" and "Your hypothesis" in the pinned hypothesis card. Manages its own `isEditing` / `draft` state.
+- `WorkingHypothesisCard` — the hypothesis card in all three visual states (skeleton, form/editing, pinned). Receives all needed state and handlers as props.
+- `RevisionStack` — expandable previous-version history shown below the pinned hypothesis.
+- `RetrospectivePanel` — the session recap shown after a correct fix, replacing the right column.
+- `ChatHistory`, `CodePanels`, `ConceptCardPlaceholder` (removed) — other top-level components.
+
+Never define stateful components inside `Home` or inside another component function.
 
 ## Styling conventions
 - Light theme throughout — bg-zinc-50 backgrounds, zinc-900 text
@@ -171,11 +189,12 @@ This section exists so implementation sessions don't drift into reach-goal work 
 - End-of-session retrospective panel (replaces right column on correct fix)
 - Within-session memory (conversation history passed back to the API)
 
-**Still to implement:**
-- Cross-session memory (per-user JSON, last 3-5 summaries injected at session start) — Steps 9–10
-- Predict-Observe-Explain with canned samples (no execution) — Step 11
+**Complete (implemented) — added since last update:**
+- Cross-session memory write (`session-summary` → `lib/memory.ts` → `data/users/{userId}.json`)
+- Cross-session memory read (`buildSessionContext` injected as `previousSessionContext` into all Diagnose mode payloads at session start)
 
-**Reach goals (future work, not in current scope):**
+**Reach goals (future work, post-pilot):**
+- Predict-Observe-Explain with canned samples — `lib/samples.ts` not yet created; `diagnose-hypothesis` already returns `predictObserveExplain` and `sampleId` flags for when this is built
 - Pyodide integration for runnable samples and deterministic variable traces
 - Deeper pedagogical personalization that actively adapts question style based on history
 - Real authentication replacing browser-local UUIDs

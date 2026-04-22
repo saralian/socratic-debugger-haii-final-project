@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import CodeEditor from "@/components/CodeEditor";
+import ReactMarkdown from "react-markdown";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,9 +55,9 @@ print(result)
 `;
 
 const PHASE_LABELS: Record<Phase, string> = {
-  submit: "Step 1 of 3 — Submit your code",
-  diagnose: "Step 2 of 3 — Diagnose the bug",
-  fix: "Step 3 of 3 — Fix the bug",
+  submit: "Submit",
+  diagnose: "Diagnose",
+  fix: "Fix",
 };
 
 // Generate or retrieve a stable browser-local user ID for cross-session memory.
@@ -101,6 +102,7 @@ interface InlineEditBlockProps {
   nullDisplay?: string;
   onSave: (v: string) => void;
   disabled?: boolean;
+  fullHeight?: boolean;
 }
 
 function InlineEditBlock({
@@ -110,17 +112,19 @@ function InlineEditBlock({
   nullDisplay,
   onSave,
   disabled = false,
+  fullHeight = false,
 }: InlineEditBlockProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
   if (isEditing) {
     return (
-      <div className="bg-zinc-50 border border-zinc-200 rounded-md p-2">
-        <label className="block text-xs font-medium text-zinc-400 mb-1">{label}</label>
+      <div className={`bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md p-2 ${fullHeight ? "flex-1 flex flex-col" : ""}`}>
+        <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">{label}</label>
         <textarea
-          className="w-full bg-white border border-zinc-300 rounded-md p-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 resize-none"
-          rows={2}
+          className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none disabled:opacity-50 flex-1"
+          rows={fullHeight ? undefined : 2}
+          style={fullHeight ? { flex: 1 } : undefined}
           autoFocus
           placeholder={placeholder}
           value={draft}
@@ -128,7 +132,7 @@ function InlineEditBlock({
         />
         <div className="flex gap-2 mt-1.5">
           <button
-            className="text-xs text-emerald-700 font-medium hover:text-emerald-600 transition"
+            className="text-xs text-emerald-600 font-medium hover:text-emerald-500 transition"
             onClick={() => {
               onSave(draft);
               setIsEditing(false);
@@ -137,7 +141,7 @@ function InlineEditBlock({
             Save
           </button>
           <button
-            className="text-xs text-zinc-400 hover:text-zinc-600 transition"
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition"
             onClick={() => {
               setDraft(value);
               setIsEditing(false);
@@ -152,12 +156,12 @@ function InlineEditBlock({
 
   if (disabled) {
     return (
-      <div className="bg-zinc-50 border border-zinc-200 rounded-md px-3 py-2">
-        <span className="block text-xs font-medium text-zinc-400 mb-0.5">{label}</span>
+      <div className={`bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md px-3 py-2 ${fullHeight ? "flex-1" : ""}`}>
+        <span className="block text-xs font-medium text-[var(--text-muted)] mb-0.5">{label}</span>
         {!value && nullDisplay ? (
-          <span className="text-sm text-zinc-400 italic">{nullDisplay}</span>
+          <span className="text-sm text-[var(--text-muted)] italic">{nullDisplay}</span>
         ) : (
-          <span className="text-sm text-zinc-700">{value}</span>
+          <span className="text-sm text-[var(--text-secondary)]">{value}</span>
         )}
       </div>
     );
@@ -165,21 +169,23 @@ function InlineEditBlock({
 
   return (
     <div
-      className="bg-zinc-50 border border-zinc-200 rounded-md px-3 py-2 cursor-pointer hover:border-zinc-300 transition group"
+      className={`bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md px-3 py-2 cursor-pointer hover:border-[var(--accent)] transition ${fullHeight ? "flex-1 flex flex-col" : ""}`}
       onClick={() => {
         setDraft(value);
         setIsEditing(true);
       }}
     >
-      <span className="flex items-center justify-between text-xs font-medium text-zinc-400 mb-0.5">
+      <span className="flex items-center justify-between text-xs font-medium text-[var(--text-muted)] mb-0.5">
         <span>{label}</span>
-        <span className="opacity-0 group-hover:opacity-100 transition">✎</span>
+        <span>✎</span>
       </span>
-      {!value && nullDisplay ? (
-        <span className="text-sm text-zinc-400 italic">{nullDisplay}</span>
-      ) : (
-        <span className="text-sm text-zinc-700">{value}</span>
-      )}
+      <div className={fullHeight ? "flex-1" : ""}>
+        {!value && nullDisplay ? (
+          <span className="text-sm text-[var(--text-muted)] italic">{nullDisplay}</span>
+        ) : (
+          <span className="text-sm text-[var(--text-secondary)]">{value}</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -206,9 +212,9 @@ function RevisionStack({ history }: { history: HypothesisEntry[] }) {
   }
 
   return (
-    <div className="mt-3 pt-3 border-t border-zinc-100">
+    <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
       <button
-        className="text-xs text-zinc-400 hover:text-zinc-600 transition flex items-center gap-1"
+        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition flex items-center gap-1"
         onClick={() => setExpanded((e) => !e)}
       >
         <span>{expanded ? "▾" : "▸"}</span>
@@ -225,12 +231,12 @@ function RevisionStack({ history }: { history: HypothesisEntry[] }) {
           {[...previous].reverse().map((entry, i) => (
             <div
               key={entry.timestamp}
-              className="bg-zinc-50 border border-zinc-200 rounded-md px-3 py-2"
+              className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md px-3 py-2"
             >
-              <span className="block text-xs text-zinc-400 mb-0.5">
+              <span className="block text-xs text-[var(--text-muted)] mb-0.5">
                 Version {previous.length - i} · {formatRelativeTime(entry.timestamp)}
               </span>
-              <p className="text-sm text-zinc-600">{entry.possibleCause}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{entry.possibleCause}</p>
             </div>
           ))}
         </div>
@@ -264,9 +270,9 @@ function WorkingHypothesisCard({
   // While the diagnose-init call is in flight, show a skeleton.
   if (!diagnosisResult) {
     return (
-      <div className="bg-white border border-zinc-200 rounded-md p-4 mb-4 animate-pulse">
-        <div className="h-3 bg-zinc-100 rounded w-1/3 mb-3" />
-        <div className="h-3 bg-zinc-100 rounded w-2/3" />
+      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-4 mb-4 animate-pulse">
+        <div className="h-3 bg-[var(--bg-elevated)] rounded w-1/3 mb-3" />
+        <div className="h-3 bg-[var(--bg-elevated)] rounded w-2/3" />
       </div>
     );
   }
@@ -287,7 +293,11 @@ function WorkingHypothesisCard({
     }
 
     return (
-      <div className="bg-white border border-zinc-200 rounded-md p-4 mb-4">
+      <>
+        <div className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">
+          Working Hypothesis
+        </div>
+      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-4 mb-4">
         {/* Observed behavior — editable, shown as context above the hypothesis field */}
         <InlineEditBlock
           label="What's happening"
@@ -296,16 +306,16 @@ function WorkingHypothesisCard({
           onSave={setObservedBehavior}
         />
 
-        {/* Tutor's orienting prompt from diagnose-init */}
-        <p className="text-sm text-zinc-600 mb-3">{diagnosisResult.hypothesisPrompt}</p>
+        {/* Tutor's orienting prompt from diagnose-init — mt-4 matches spacing below */}
+        <p className="text-sm text-[var(--text-secondary)] mt-4 mb-3">{diagnosisResult.hypothesisPrompt}</p>
 
         {/* Single cause hypothesis field */}
         <div className="mb-4">
-          <label className="block text-xs font-medium text-zinc-500 mb-1">
+          <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
             What do you think might be causing this?
           </label>
           <textarea
-            className="w-full bg-zinc-50 border border-zinc-300 rounded-md p-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 resize-none disabled:opacity-50"
+            className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md p-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none disabled:opacity-50"
             rows={3}
             placeholder="Your best guess — even a vague idea is a great start…"
             value={draftHypothesis.possibleCause}
@@ -317,7 +327,7 @@ function WorkingHypothesisCard({
         {/* Actions */}
         <div className="flex gap-2">
           <button
-            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-md transition"
+            className="bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-md transition"
             onClick={handleFormSubmit}
             disabled={isLoading || !draftHypothesis.possibleCause.trim()}
           >
@@ -327,7 +337,7 @@ function WorkingHypothesisCard({
           {/* "I'm not sure" — first-class option at the cause level */}
           {isPending && (
             <button
-              className="bg-white border border-zinc-300 hover:border-zinc-400 text-zinc-600 hover:text-zinc-800 text-sm font-medium px-4 py-1.5 rounded-md transition disabled:opacity-50"
+              className="bg-transparent border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-medium px-4 py-1.5 rounded-md transition disabled:opacity-50"
               onClick={onUnsure}
               disabled={isLoading}
             >
@@ -338,7 +348,7 @@ function WorkingHypothesisCard({
           {/* Cancel — only shown when editing an existing hypothesis */}
           {!isPending && (
             <button
-              className="bg-white border border-zinc-300 hover:border-zinc-400 text-zinc-600 hover:text-zinc-800 text-sm font-medium px-4 py-1.5 rounded-md transition"
+              className="bg-transparent border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-medium px-4 py-1.5 rounded-md transition"
               onClick={handleCancelEdit}
             >
               Cancel
@@ -346,23 +356,29 @@ function WorkingHypothesisCard({
           )}
         </div>
       </div>
+      </>
     );
   }
 
   // ── Pinned state ──────────────────────────────────────────────────────────
   return (
-    <div className="bg-white border border-zinc-200 rounded-md p-4 mb-4">
-      {/* Two side-by-side cells: observation (left) and hypothesis (right) */}
-      <div className="flex gap-3">
-        <div className="w-1/2">
+    <>
+      <div className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">
+        Working Hypothesis
+      </div>
+    <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-4 mb-4">
+      {/* Two side-by-side cells: observation (left) and hypothesis (right) — always equal height */}
+      <div className="flex gap-3 items-stretch">
+        <div className="w-1/2 flex flex-col">
           <InlineEditBlock
             label="What's happening"
             value={observedBehavior}
             placeholder="Describe what's going wrong…"
             onSave={setObservedBehavior}
+            fullHeight
           />
         </div>
-        <div className="w-1/2">
+        <div className="w-1/2 flex flex-col">
           <InlineEditBlock
             label="Your hypothesis"
             value={workingHypothesis?.possibleCause ?? ""}
@@ -378,6 +394,7 @@ function WorkingHypothesisCard({
               }
             }}
             disabled={hypothesisCommitted}
+            fullHeight
           />
         </div>
       </div>
@@ -387,26 +404,24 @@ function WorkingHypothesisCard({
 
       {/* "I think I've got it" — commitment flow */}
       {workingHypothesis && !hypothesisCommitted && (
-        <div className="mt-3 pt-3 border-t border-zinc-100">
+        <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
           {commitPending ? (
             // ── Confirmation view ───────────────────────────────────────────
-            // Shows the student their current hypothesis before they lock it in.
-            // No re-typing required — just confirm or go back.
             <div>
-              <p className="text-xs text-zinc-500 mb-2">
+              <p className="text-xs text-[var(--text-muted)] mb-2">
                 Ready to lock this in as your hypothesis?
               </p>
-              <div className="bg-zinc-50 border border-zinc-200 rounded-md px-3 py-2 mb-3">
-                <span className="block text-xs font-medium text-zinc-400 mb-0.5">
+              <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md px-3 py-2 mb-3">
+                <span className="block text-xs font-medium text-[var(--text-muted)] mb-0.5">
                   Your current hypothesis
                 </span>
-                <p className="text-sm text-zinc-700">
+                <p className="text-sm text-[var(--text-secondary)]">
                   {workingHypothesis.possibleCause}
                 </p>
               </div>
               <div className="flex gap-2">
                 <button
-                  className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-md transition"
+                  className="bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-md transition"
                   onClick={() => {
                     setCommitPending(false);
                     onCommit();
@@ -416,7 +431,7 @@ function WorkingHypothesisCard({
                   {isLoading ? "Checking…" : "Yes, that's my hypothesis"}
                 </button>
                 <button
-                  className="bg-white border border-zinc-300 hover:border-zinc-400 text-zinc-600 hover:text-zinc-800 text-sm font-medium px-4 py-1.5 rounded-md transition"
+                  className="bg-transparent border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-medium px-4 py-1.5 rounded-md transition"
                   onClick={() => setCommitPending(false)}
                   disabled={isLoading}
                 >
@@ -427,7 +442,7 @@ function WorkingHypothesisCard({
           ) : (
             // ── Default button ──────────────────────────────────────────────
             <button
-              className="text-sm text-emerald-700 font-medium hover:text-emerald-600 transition"
+              className="text-sm text-[var(--accent)] font-medium hover:opacity-80 transition"
               onClick={() => setCommitPending(true)}
             >
               I think I've got it →
@@ -436,6 +451,7 @@ function WorkingHypothesisCard({
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -457,14 +473,14 @@ function RetrospectivePanel({ hypothesisHistory, sessionSummary }: Retrospective
   if (!sessionSummary) return null;
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-md p-4 mb-4">
+    <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-4 mb-4">
       {/* Header */}
-      <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3">
+      <div className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3">
         Session recap
       </div>
 
       {/* What you learned — the concept summary from fix-eval */}
-      <div className="bg-emerald-50 border border-emerald-100 rounded-md px-3 py-2 mb-3">
+      <div className="bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2 mb-3">
         <span className="block text-xs font-medium text-emerald-700 mb-1">
           What you learned
         </span>
@@ -474,7 +490,7 @@ function RetrospectivePanel({ hypothesisHistory, sessionSummary }: Retrospective
       {/* Hypothesis arc — how the student's thinking evolved */}
       {hypothesisHistory.length > 0 && (
         <div>
-          <span className="block text-xs font-medium text-zinc-400 mb-2">
+          <span className="block text-xs font-medium text-[var(--text-muted)] mb-2">
             How your thinking evolved
           </span>
           <div className="space-y-1.5">
@@ -489,20 +505,20 @@ function RetrospectivePanel({ hypothesisHistory, sessionSummary }: Retrospective
                       className={`w-2 h-2 rounded-full border ${
                         isLast
                           ? "bg-emerald-500 border-emerald-500"
-                          : "bg-white border-zinc-300"
+                          : "bg-transparent border-[var(--border)]"
                       }`}
                     />
                     {!isLast && (
-                      <div className="w-px flex-1 bg-zinc-200 mt-1" style={{ minHeight: "12px" }} />
+                      <div className="w-px flex-1 bg-[var(--border)] mt-1" style={{ minHeight: "12px" }} />
                     )}
                   </div>
                   {/* Hypothesis text */}
                   <div className="pb-1.5">
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-[var(--text-muted)]">
                       {isFirst && hypothesisHistory.length > 1 ? "Started with: " : ""}
                       {isLast && hypothesisHistory.length > 1 ? "Landed on: " : ""}
                     </span>
-                    <p className="text-sm text-zinc-700 leading-snug">
+                    <p className="text-sm text-[var(--text-secondary)] leading-snug">
                       {entry.possibleCause}
                     </p>
                   </div>
@@ -526,7 +542,7 @@ function ChatHistory({ conversationHistory, isLoading, chatEndRef }: ChatHistory
   return (
     <div className="flex-1 overflow-y-auto space-y-3 pr-1">
       {conversationHistory.length === 0 && !isLoading && (
-        <p className="text-sm text-zinc-400 italic">
+        <p className="text-sm text-[var(--text-muted)] italic">
           The conversation will appear here once you submit your hypothesis.
         </p>
       )}
@@ -538,18 +554,51 @@ function ChatHistory({ conversationHistory, isLoading, chatEndRef }: ChatHistory
           <div
             className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
               msg.role === "tutor"
-                ? "bg-blue-50 border border-blue-100 text-zinc-800"
-                : "bg-emerald-50 border border-emerald-100 text-zinc-800"
+                ? "bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-primary)]"
+                : "bg-[var(--accent-dim)] border border-[var(--accent)] text-[var(--text-primary)]"
             }`}
           >
-            {msg.content}
+            {msg.role === "tutor" ? (
+              <ReactMarkdown
+                components={{
+                  code({ children, className, ...props }) {
+                    const isBlock = className?.startsWith("language-");
+                    return isBlock ? (
+                      <pre className="bg-[var(--bg-base)] border border-[var(--border)] rounded p-2 overflow-x-auto my-1.5">
+                        <code className="font-mono text-xs text-[var(--text-primary)]" {...props}>
+                          {children}
+                        </code>
+                      </pre>
+                    ) : (
+                      <code
+                        className="font-mono text-xs bg-[var(--bg-base)] border border-[var(--border)] rounded px-1 py-0.5 text-[var(--accent)]"
+                        {...props}
+                      >
+                        {children}
+                      </code>
+                    );
+                  },
+                  p({ children }) {
+                    return <p className="mb-1.5 last:mb-0">{children}</p>;
+                  },
+                }}
+              >
+                {msg.content}
+              </ReactMarkdown>
+            ) : (
+              msg.content
+            )}
           </div>
         </div>
       ))}
       {isLoading && (
         <div className="flex justify-start">
-          <div className="bg-blue-50 border border-blue-100 text-zinc-400 text-sm rounded-lg px-3 py-2 italic">
-            Tutor is thinking…
+          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-muted)] text-sm rounded-lg px-3 py-2 flex items-center gap-2">
+            <svg className="animate-spin h-3.5 w-3.5 text-[var(--accent)] shrink-0" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <span>Thinking…</span>
           </div>
         </div>
       )}
@@ -581,16 +630,15 @@ function CodePanels({
   onSubmitFix,
   onResetCode,
 }: CodePanelsProps) {
-  const [resetConfirm, setResetConfirm] = useState(false);
   const isFixPhase = phase === "fix";
 
   return (
-    <div className="flex flex-col gap-4 h-full" style={{ width: "55%" }}>
+    <div className="flex flex-col gap-4 h-full" style={{ width: "50%" }}>
       <div>
-        <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-2">
           Original code
         </label>
-        <div className="bg-zinc-100 border border-zinc-300 rounded-md overflow-hidden">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-md overflow-hidden">
           <CodeEditor
             value={originalCode}
             onChange={() => {}}
@@ -605,40 +653,32 @@ function CodePanels({
         {/* In Fix phase: highlight the working copy as the active editing target */}
         <div className="flex items-center justify-between mb-2">
           <label className={`block text-xs font-medium uppercase tracking-wide ${
-            isFixPhase ? "text-emerald-600" : "text-zinc-500"
+            isFixPhase ? "text-emerald-400" : "text-[var(--text-muted)]"
           }`}>
             {isFixPhase ? "Your working copy — apply your fix here" : "Your working copy"}
           </label>
-          {/* Reset to original — only shown in Fix phase */}
+          {/* Reset to original — icon with tooltip, only shown in Fix phase */}
           {isFixPhase && (
-            resetConfirm ? (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-zinc-500">Reset to original?</span>
-                <button
-                  className="text-red-500 hover:text-red-600 font-medium transition"
-                  onClick={() => { onResetCode(); setResetConfirm(false); }}
-                >
-                  Yes
-                </button>
-                <button
-                  className="text-zinc-400 hover:text-zinc-600 transition"
-                  onClick={() => setResetConfirm(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
+            <div className="relative group">
               <button
-                className="text-xs text-zinc-400 hover:text-zinc-600 transition"
-                onClick={() => setResetConfirm(true)}
+                className="p-1.5 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition"
+                onClick={onResetCode}
+                aria-label="Reset code to original"
               >
-                Reset to original
+                {/* Refresh/reset icon */}
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
               </button>
-            )
+              <span className="absolute right-0 top-full mt-1 px-2 py-1 text-xs bg-[var(--bg-elevated)] border border-[var(--border)] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 text-[var(--text-secondary)]">
+                Reset code to original
+              </span>
+            </div>
           )}
         </div>
-        {/* Emerald ring around editor in Fix phase to signal active editing target */}
-        <div className={isFixPhase ? "ring-1 ring-emerald-300 rounded-md overflow-hidden flex-1 flex flex-col" : "flex-1 flex flex-col"}>
+        {/* Accent ring around editor in Fix phase to signal active editing target */}
+        <div className={isFixPhase ? "ring-1 ring-[var(--accent)] rounded-md overflow-hidden flex-1 flex flex-col" : "flex-1 flex flex-col"}>
           <CodeEditor
             value={code}
             onChange={editable ? setCode : () => {}}
@@ -650,7 +690,7 @@ function CodePanels({
 
       {isFixPhase && (
         <button
-          className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium px-5 py-2 rounded-md transition"
+          className="bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-white font-medium px-5 py-2 rounded-md transition"
           onClick={onSubmitFix}
           disabled={isLoading}
         >
@@ -925,14 +965,34 @@ export default function Home() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-900">
+    <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       {/* Phase banner */}
-      <div className="border-b border-zinc-200 bg-white px-8 py-3">
+      <div className="border-b border-[var(--border)] bg-[var(--bg-surface)] px-8 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Socratic Debugging Tutor</h1>
-          <span className="text-xs font-medium text-zinc-500 bg-zinc-100 border border-zinc-200 rounded-full px-3 py-1">
-            {PHASE_LABELS[phase]}
-          </span>
+          <h1 className="text-base font-semibold tracking-tight">Socratic Debugging Tutor</h1>
+          {/* Step indicator — all 3 steps always visible, active one highlighted */}
+          <div className="flex items-center gap-1.5">
+            {(["submit", "diagnose", "fix"] as Phase[]).map((p, i) => {
+              const isActive = phase === p;
+              return (
+                <div
+                  key={p}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                    isActive
+                      ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                      : "bg-transparent text-[var(--text-muted)] border-[var(--border-subtle)]"
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    isActive ? "bg-white/20" : "bg-[var(--bg-elevated)]"
+                  }`}>
+                    {i + 1}
+                  </span>
+                  {PHASE_LABELS[p]}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -942,7 +1002,7 @@ export default function Home() {
           <div className="flex gap-6 h-[calc(100vh-120px)]">
             {/* Left column — code editor */}
             <div className="flex flex-col h-full" style={{ width: "55%" }}>
-              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
+              <label className="block text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-2">
                 Your code
               </label>
               <div className="flex-1 flex flex-col">
@@ -953,12 +1013,12 @@ export default function Home() {
             {/* Right column — fields + button */}
             <div className="flex flex-col" style={{ width: "45%" }}>
               <section className="mb-4">
-                <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
+                <label className="block text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-2">
                   What should this code do?{" "}
-                  <span className="normal-case font-normal text-zinc-400">(optional)</span>
+                  <span className="normal-case font-normal text-[var(--text-muted)] opacity-60">(optional)</span>
                 </label>
                 <textarea
-                  className="w-full bg-white border border-zinc-300 rounded-md p-3 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                   rows={2}
                   placeholder="e.g. find the max of a list of numbers"
                   value={studentIntent}
@@ -967,7 +1027,7 @@ export default function Home() {
               </section>
 
               <section className="mb-4">
-                <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
+                <label className="block text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-2">
                   What's happening when you run it?
                 </label>
                 {/* Scaffolding chips — tap to populate the field, then edit if needed */}
@@ -978,8 +1038,8 @@ export default function Home() {
                       type="button"
                       className={`text-xs px-3 py-1 rounded-full border transition ${
                         observedBehavior === chip
-                          ? "bg-zinc-800 border-zinc-800 text-white"
-                          : "bg-white border-zinc-300 text-zinc-600 hover:border-zinc-400 hover:text-zinc-800"
+                          ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                          : "bg-transparent border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--text-primary)]"
                       }`}
                       onClick={() => setObservedBehavior(chip)}
                     >
@@ -988,7 +1048,7 @@ export default function Home() {
                   ))}
                 </div>
                 <textarea
-                  className="w-full bg-white border border-zinc-300 rounded-md p-3 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                   rows={2}
                   placeholder="Describe what's going wrong — or tap a chip above to start…"
                   value={observedBehavior}
@@ -999,7 +1059,7 @@ export default function Home() {
               <div className="flex-1" />
 
               <button
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium px-5 py-2 rounded-md transition"
+                className="bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-white font-medium px-5 py-2 rounded-md transition"
                 onClick={handleStartDebugging}
                 disabled={isLoading || !observedBehavior.trim()}
               >
@@ -1024,11 +1084,7 @@ export default function Home() {
               onResetCode={() => {}}
             />
 
-            <div className="flex flex-col" style={{ width: "45%" }}>
-              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
-                Tutor
-              </label>
-
+            <div className="flex flex-col" style={{ width: "50%" }}>
               <WorkingHypothesisCard
                 diagnosisResult={diagnosisResult}
                 observedBehavior={observedBehavior}
@@ -1048,6 +1104,10 @@ export default function Home() {
                 onCommit={handleCommitHypothesis}
               />
 
+              <label className="block text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-3">
+                Tutor
+              </label>
+
               <ChatHistory
                 conversationHistory={conversationHistory}
                 isLoading={isLoading}
@@ -1056,7 +1116,7 @@ export default function Home() {
 
               <div className="flex gap-2 mt-4">
                 <textarea
-                  className="flex-1 bg-white border border-zinc-300 rounded-md p-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 resize-none disabled:opacity-50"
+                  className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none disabled:opacity-50"
                   rows={2}
                   placeholder="Type your reply…"
                   value={studentReply}
@@ -1070,7 +1130,7 @@ export default function Home() {
                   }}
                 />
                 <button
-                  className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-md transition self-end"
+                  className="bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-md transition self-end"
                   onClick={handleSendReply}
                   disabled={isLoading || !studentReply.trim()}
                 >
@@ -1096,7 +1156,7 @@ export default function Home() {
               onResetCode={() => setCode(originalCode)}
             />
 
-            <div className="flex flex-col" style={{ width: "45%" }}>
+            <div className="flex flex-col" style={{ width: "50%" }}>
               {sessionSummary ? (
                 // ── Session complete — replace right column with retrospective ──
                 <RetrospectivePanel
@@ -1106,10 +1166,6 @@ export default function Home() {
               ) : (
                 // ── Fix in progress — show hypothesis reference + chat ──────────
                 <>
-                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
-                    Tutor
-                  </label>
-
                   {/* Hypothesis card — frozen reference for what the student is fixing */}
                   <WorkingHypothesisCard
                     diagnosisResult={diagnosisResult}
@@ -1130,6 +1186,10 @@ export default function Home() {
                     onCommit={() => {}}
                   />
 
+                  <label className="block text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-3">
+                    Tutor
+                  </label>
+
                   <ChatHistory
                     conversationHistory={conversationHistory}
                     isLoading={isLoading}
@@ -1141,7 +1201,7 @@ export default function Home() {
                       mode could be added in a future iteration for better context */}
                   <div className="flex gap-2 mt-4">
                     <textarea
-                      className="flex-1 bg-white border border-zinc-300 rounded-md p-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 resize-none disabled:opacity-50"
+                      className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none disabled:opacity-50"
                       rows={2}
                       placeholder="Ask a question about your fix…"
                       value={studentReply}
@@ -1155,7 +1215,7 @@ export default function Home() {
                       }}
                     />
                     <button
-                      className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-md transition self-end"
+                      className="bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-md transition self-end"
                       onClick={handleSendReply}
                       disabled={isLoading || !studentReply.trim()}
                     >

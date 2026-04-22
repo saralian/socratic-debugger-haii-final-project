@@ -13,6 +13,13 @@
       "finalHypothesis": "The range should be range(1, len(numbers)) instead of range(1, len(numbers) + 1) because the +1 pushes the upper bound to 6, causing i to reach 5 on the last iteration, which is one past the last valid index of 4 for a 5-element list.",
       "fixSuccessful": true,
       "summary": "The student worked through an off-by-one error in a loop range, where `range(1, len(numbers) + 1)` caused an IndexError. The student's initial hypothesis was correct — that removing the `+1` was the fix — but they needed some prompting to articulate the full mechanism, particularly connecting `len(numbers)` evaluating to 5, the exclusive nature of `range()`, and zero-indexing. By the end, the student could clearly explain each step: that `len(numbers)` equals 5, that the `+1` bumps the stop to 6, and that this makes `i` reach 5, which is one past the last valid index of 4."
+    },
+    {
+      "timestamp": 1776840355277,
+      "bugCategory": "off-by-one",
+      "finalHypothesis": "the upper bound of the range() function should be len(numbers) so that it loops over the last element",
+      "fixSuccessful": true,
+      "summary": "The student worked through an off-by-one error in a loop range, where `range(1, len(numbers) - 1)` caused the last element of the list to be skipped. Their initial hypothesis correctly identified the for loop as the source of the issue, and through guided questions they pinpointed that subtracting 1 from `len(numbers)` — combined with `range`'s exclusive upper bound — caused the loop to stop at index 3 instead of index 4. The student demonstrated a clear understanding of how `range` exclusivity works and articulated the full mechanism without prompting."
     }
   ]
 }
