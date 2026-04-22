@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveSessionMemory } from "@/lib/memory";
+import { buildSessionContext, saveSessionSummary } from "@/lib/memory";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -35,7 +35,7 @@ RULES — never violate:
 - Do NOT name the underlying concept (e.g. do not say "off-by-one error").
 - Do NOT hint at what the fix is.
 - Do NOT ask a leading question here — this output appears above a hypothesis form, not in the chat.
-- The hypothesisPrompt should be a single warm, short sentence. When observedBehavior is substantive, acknowledge it implicitly and invite the student to think about why. When observedBehavior is "I'm not sure", invite them to run the code first.
+- The hypothesisPrompt should be a single warm sentence that acknowledges what the student observed and asks them to think about why — without referencing the code, the loop, any specific line, or anything that implies you already know the cause. It should feel like a neutral open door, not a leading question. Example: "You noticed it crashes — what do you think might be causing that?"
 
 Respond with ONLY a JSON object (no markdown, no surrounding text):
 {
@@ -121,12 +121,10 @@ CRITERIA for conceptEarned = false:
 - The student's hypothesis describes a different bug than the actual one.
 
 If conceptEarned is true:
-- Write a tutorMessage that affirms warmly and bridges to the concept name naturally ("What you've just described is called...").
-- Populate conceptCard with the concept name and blurb from the internal diagnosis.
+- Write a tutorMessage that affirms warmly, explains the mechanism precisely, then names the concept naturally ("What you've just worked out is called..."). The tutorMessage is the concept reveal — write it as a complete, satisfying explanation the student will remember.
 
 If conceptEarned is false:
 - Write a tutorMessage that gently pushes back without revealing the answer. Acknowledge what they got right, then ask one more question that targets the gap.
-- Set conceptCard to null.
 - Do NOT name the concept in the tutorMessage.
 - A "not yet" should feel like a nudge toward understanding, not a failure.
 
@@ -137,8 +135,7 @@ RULES — never violate:
 Respond with ONLY a JSON object (no markdown, no surrounding text):
 {
   "conceptEarned": <true | false>,
-  "tutorMessage": <your response>,
-  "conceptCard": <{ "conceptName": string, "conceptBlurb": string } | null>
+  "tutorMessage": <your response>
 }`;
 
 const SYSTEM_FIX_EVAL = `You are a Socratic debugging tutor evaluating a student's attempted fix to a bug they have worked through with you.
@@ -210,7 +207,9 @@ function getMaxTokens(mode: string): number {
 
 function buildUserMessage(body: Record<string, unknown>): string {
   const mode = body.mode as string;
-
+  const userId = (body.userId as string) || "";
+  const previousSessionContext = userId ? buildSessionContext(userId, 5) : "";
+  
   let payload: Record<string, unknown>;
 
   switch (mode) {
@@ -220,6 +219,7 @@ function buildUserMessage(body: Record<string, unknown>): string {
         code: body.code,
         studentIntent: body.studentIntent || null,
         observedBehavior: body.observedBehavior,
+        previousSessionContext: previousSessionContext || undefined,
       };
       break;
 
@@ -233,6 +233,7 @@ function buildUserMessage(body: Record<string, unknown>): string {
         internalBugSummary: body.internalBugSummary,
         conversationHistory: body.conversationHistory,
         studentMessage: body.studentMessage || undefined,
+        previousSessionContext: previousSessionContext || undefined,
       };
       break;
 
@@ -244,6 +245,7 @@ function buildUserMessage(body: Record<string, unknown>): string {
         observedBehavior: body.observedBehavior,
         observationUnsure: body.observationUnsure,
         internalBugSummary: body.internalBugSummary,
+        previousSessionContext: previousSessionContext || undefined,
       };
       break;
 
@@ -259,6 +261,7 @@ function buildUserMessage(body: Record<string, unknown>): string {
         conceptName: body.conceptName,
         conceptBlurb: body.conceptBlurb,
         conversationHistory: body.conversationHistory,
+        previousSessionContext: previousSessionContext || undefined,
       };
       break;
 
@@ -291,18 +294,6 @@ function buildUserMessage(body: Record<string, unknown>): string {
 
   // Drop undefined values
   const json = JSON.stringify(payload, (_, v) => (v === undefined ? undefined : v));
-
-  // Append previous session context as a labeled text block for Diagnose modes only
-  if (DIAGNOSE_MODES.has(mode)) {
-    const ctx = body.previousSessionContext as string | null | undefined;
-    if (ctx && ctx.trim()) {
-      return (
-        json +
-        "\n\n--- Previous session context (for tutor use only — do not share directly with student) ---\n" +
-        ctx.trim()
-      );
-    }
-  }
 
   return json;
 }
@@ -382,14 +373,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Model returned non-JSON response" }, { status: 500 });
   }
 
-  // Persist session memory as a side effect of session-summary (errors caught silently)
-  if (mode === "session-summary" && parsed.sessionMemory) {
+  // Persist session summary as a side effect of session-summary
+  if (mode === "session-summary") {
     const userId = (body.userId as string) || "";
     if (userId) {
-      saveSessionMemory(userId, {
-        bugCategory: (parsed.bugCategory as string) ?? "other",
-        sessionMemory: parsed.sessionMemory as string,
-      });
+      try {
+        saveSessionSummary(userId, {
+          timestamp: Date.now(),
+          bugCategory: (parsed.bugCategory as string) ?? "other",
+          finalHypothesis: (parsed.finalHypothesis as string) ?? "",
+          fixSuccessful: Boolean(parsed.fixSuccessful),
+          summary: (parsed.sessionMemory as string) ?? "",
+        });
+      } catch (err) {
+        console.error("[memory] saveSessionSummary failed:", err);
+      }
     }
   }
 

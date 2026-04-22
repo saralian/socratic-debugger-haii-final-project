@@ -1,7 +1,18 @@
-[
-  {
-    "date": "2026-04-22",
-    "bugCategory": "other",
-    "sessionMemory": "The student worked through an unintended arithmetic operation bug where a stray `- 1` at the end of the return statement always shifted the average one below the correct value. The student initially identified that the average wasn't calculating properly, then quickly narrowed in on the `- 1` once prompted to look at the return expression. The student demonstrated clear reasoning by articulating the correct average formula (sum / count) and explaining why the extra subtraction didn't belong."
-  }
-]
+{
+  "sessions": [
+    {
+      "timestamp": 1776835931126,
+      "bugCategory": "off-by-one",
+      "finalHypothesis": "The range should be len(numbers), not len(numbers)+1, because range(1, len(numbers)) produces indices up to len(numbers)-1, which is the last valid index of the list.",
+      "fixSuccessful": true,
+      "summary": "The student worked through an off-by-one error in a loop range where `len(numbers) + 1` caused the loop to access an out-of-bounds index. The student initially located the issue on the correct line, then briefly considered `len(numbers) - 1` before reasoning through why `len(numbers)` was the right upper bound. By the end, the student could articulate that `range(1, len(numbers))` works because it produces values up to `len(numbers) - 1`, which is exactly the last valid index of a zero-indexed list."
+    },
+    {
+      "timestamp": 1776837009654,
+      "bugCategory": "off-by-one",
+      "finalHypothesis": "The range should be range(1, len(numbers)) instead of range(1, len(numbers) + 1) because the +1 pushes the upper bound to 6, causing i to reach 5 on the last iteration, which is one past the last valid index of 4 for a 5-element list.",
+      "fixSuccessful": true,
+      "summary": "The student worked through an off-by-one error in a loop range, where `range(1, len(numbers) + 1)` caused an IndexError. The student's initial hypothesis was correct — that removing the `+1` was the fix — but they needed some prompting to articulate the full mechanism, particularly connecting `len(numbers)` evaluating to 5, the exclusive nature of `range()`, and zero-indexing. By the end, the student could clearly explain each step: that `len(numbers)` equals 5, that the `+1` bumps the stop to 6, and that this makes `i` reach 5, which is one past the last valid index of 4."
+    }
+  ]
+}

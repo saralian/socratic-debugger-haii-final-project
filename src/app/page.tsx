@@ -42,10 +42,14 @@ const OBSERVATION_CHIPS = [
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const SEED_CODE = `def average(numbers):
-    return sum(numbers) / len(numbers) - 1
+const SEED_CODE = `def find_max(numbers):
+    max_val = numbers[0]
+    for i in range(1, len(numbers) - 1):
+        if numbers[i] > max_val:
+            max_val = numbers[i]
+    return max_val
 
-result = average([2, 4, 6])
+result = find_max([3, 7, 2, 4, 9])
 print(result)
 `;
 
@@ -435,25 +439,79 @@ function WorkingHypothesisCard({
   );
 }
 
-interface ConceptCardPlaceholderProps {
-  conceptRevealed: boolean;
-  diagnosisResult: DiagnosisResult | null;
+interface RetrospectivePanelProps {
+  hypothesisHistory: HypothesisEntry[];
+  sessionSummary: string | null;
 }
 
-function ConceptCardPlaceholder({
-  conceptRevealed,
-  diagnosisResult,
-}: ConceptCardPlaceholderProps) {
-  if (!conceptRevealed || !diagnosisResult) return null;
+// Retrospective panel — shown in the Fix phase after a correct fix verdict.
+// Displays the student's hypothesis arc (ordered revisions) plus the
+// concept summary from fix-eval. This is the session's distilled artifact
+// and the primary CTA gap-analysis data source.
+//
+// Note: the warmer one-line retrospectiveSummary from the session-summary
+// API call is not yet wired here — sessionSummary currently stores
+// conceptSummary from fix-eval. A future iteration could await the
+// session-summary response and use retrospectiveSummary instead.
+function RetrospectivePanel({ hypothesisHistory, sessionSummary }: RetrospectivePanelProps) {
+  if (!sessionSummary) return null;
+
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
-      <div className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">
-        Concept
+    <div className="bg-white border border-zinc-200 rounded-md p-4 mb-4">
+      {/* Header */}
+      <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3">
+        Session recap
       </div>
-      <div className="text-sm font-semibold text-zinc-800 mb-1">
-        {diagnosisResult.conceptName}
+
+      {/* What you learned — the concept summary from fix-eval */}
+      <div className="bg-emerald-50 border border-emerald-100 rounded-md px-3 py-2 mb-3">
+        <span className="block text-xs font-medium text-emerald-700 mb-1">
+          What you learned
+        </span>
+        <p className="text-sm text-emerald-900 leading-relaxed">{sessionSummary}</p>
       </div>
-      <p className="text-sm text-zinc-600">{diagnosisResult.conceptBlurb}</p>
+
+      {/* Hypothesis arc — how the student's thinking evolved */}
+      {hypothesisHistory.length > 0 && (
+        <div>
+          <span className="block text-xs font-medium text-zinc-400 mb-2">
+            How your thinking evolved
+          </span>
+          <div className="space-y-1.5">
+            {hypothesisHistory.map((entry, i) => {
+              const isFirst = i === 0;
+              const isLast = i === hypothesisHistory.length - 1;
+              return (
+                <div key={entry.timestamp} className="flex gap-2 items-start">
+                  {/* Arc indicator */}
+                  <div className="flex flex-col items-center mt-1 shrink-0">
+                    <div
+                      className={`w-2 h-2 rounded-full border ${
+                        isLast
+                          ? "bg-emerald-500 border-emerald-500"
+                          : "bg-white border-zinc-300"
+                      }`}
+                    />
+                    {!isLast && (
+                      <div className="w-px flex-1 bg-zinc-200 mt-1" style={{ minHeight: "12px" }} />
+                    )}
+                  </div>
+                  {/* Hypothesis text */}
+                  <div className="pb-1.5">
+                    <span className="text-xs text-zinc-400">
+                      {isFirst && hypothesisHistory.length > 1 ? "Started with: " : ""}
+                      {isLast && hypothesisHistory.length > 1 ? "Landed on: " : ""}
+                    </span>
+                    <p className="text-sm text-zinc-700 leading-snug">
+                      {entry.possibleCause}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -509,6 +567,7 @@ interface CodePanelsProps {
   diagnosisResult: DiagnosisResult | null;
   isLoading: boolean;
   onSubmitFix: () => void;
+  onResetCode: () => void;
 }
 
 function CodePanels({
@@ -520,7 +579,11 @@ function CodePanels({
   diagnosisResult,
   isLoading,
   onSubmitFix,
+  onResetCode,
 }: CodePanelsProps) {
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const isFixPhase = phase === "fix";
+
   return (
     <div className="flex flex-col gap-4 h-full" style={{ width: "55%" }}>
       <div>
@@ -539,18 +602,53 @@ function CodePanels({
       </div>
 
       <div className="flex-1 flex flex-col">
-        <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
-          Your working copy
-        </label>
-        <CodeEditor
-          value={code}
-          onChange={editable ? setCode : () => {}}
-          readOnly={!editable}
-          height="100%"
-        />
+        {/* In Fix phase: highlight the working copy as the active editing target */}
+        <div className="flex items-center justify-between mb-2">
+          <label className={`block text-xs font-medium uppercase tracking-wide ${
+            isFixPhase ? "text-emerald-600" : "text-zinc-500"
+          }`}>
+            {isFixPhase ? "Your working copy — apply your fix here" : "Your working copy"}
+          </label>
+          {/* Reset to original — only shown in Fix phase */}
+          {isFixPhase && (
+            resetConfirm ? (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-zinc-500">Reset to original?</span>
+                <button
+                  className="text-red-500 hover:text-red-600 font-medium transition"
+                  onClick={() => { onResetCode(); setResetConfirm(false); }}
+                >
+                  Yes
+                </button>
+                <button
+                  className="text-zinc-400 hover:text-zinc-600 transition"
+                  onClick={() => setResetConfirm(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                className="text-xs text-zinc-400 hover:text-zinc-600 transition"
+                onClick={() => setResetConfirm(true)}
+              >
+                Reset to original
+              </button>
+            )
+          )}
+        </div>
+        {/* Emerald ring around editor in Fix phase to signal active editing target */}
+        <div className={isFixPhase ? "ring-1 ring-emerald-300 rounded-md overflow-hidden flex-1 flex flex-col" : "flex-1 flex flex-col"}>
+          <CodeEditor
+            value={code}
+            onChange={editable ? setCode : () => {}}
+            readOnly={!editable}
+            height="100%"
+          />
+        </div>
       </div>
 
-      {phase === "fix" && (
+      {isFixPhase && (
         <button
           className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium px-5 py-2 rounded-md transition"
           onClick={onSubmitFix}
@@ -580,10 +678,9 @@ export default function Home() {
   const [studentReply, setStudentReply] = useState("");
 
   // ── Diagnosis state ──────────────────────────────────────────────────────
-  // diagnosisResult is internal — conceptName/conceptBlurb are never shown
-  // until conceptRevealed is true (after diagnose-commit succeeds).
+  // diagnosisResult is internal — conceptName/conceptBlurb are used to guide
+  // questioning and are never shown directly to the student.
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
-  const [conceptRevealed, setConceptRevealed] = useState(false);
 
   // ── Hypothesis state ─────────────────────────────────────────────────────
   // workingHypothesis: the student's current live hypothesis (null before first submission
@@ -777,9 +874,7 @@ export default function Home() {
     setConversationHistory((prev) => [...prev, tutorMsg]);
 
     if (data.conceptEarned) {
-      // Step 7: reveal the Concept card and advance to Fix.
       setHypothesisCommitted(true);
-      setConceptRevealed(true);
       setPhase("fix");
     }
     // If conceptEarned is false, the tutor message pushes back — student stays in Diagnose.
@@ -865,7 +960,7 @@ export default function Home() {
                 <textarea
                   className="w-full bg-white border border-zinc-300 rounded-md p-3 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
                   rows={2}
-                  placeholder="e.g. compute the average of a list of numbers"
+                  placeholder="e.g. find the max of a list of numbers"
                   value={studentIntent}
                   onChange={(e) => setStudentIntent(e.target.value)}
                 />
@@ -926,6 +1021,7 @@ export default function Home() {
               diagnosisResult={diagnosisResult}
               isLoading={isLoading}
               onSubmitFix={handleSubmitFix}
+              onResetCode={() => {}}
             />
 
             <div className="flex flex-col" style={{ width: "45%" }}>
@@ -997,30 +1093,77 @@ export default function Home() {
               diagnosisResult={diagnosisResult}
               isLoading={isLoading}
               onSubmitFix={handleSubmitFix}
+              onResetCode={() => setCode(originalCode)}
             />
 
             <div className="flex flex-col" style={{ width: "45%" }}>
-              <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
-                Tutor
-              </label>
+              {sessionSummary ? (
+                // ── Session complete — replace right column with retrospective ──
+                <RetrospectivePanel
+                  hypothesisHistory={hypothesisHistory}
+                  sessionSummary={sessionSummary}
+                />
+              ) : (
+                // ── Fix in progress — show hypothesis reference + chat ──────────
+                <>
+                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
+                    Tutor
+                  </label>
 
-              {/* Earned Concept card — shown only after diagnose-commit succeeds */}
-              <ConceptCardPlaceholder
-                conceptRevealed={conceptRevealed}
-                diagnosisResult={diagnosisResult}
-              />
+                  {/* Hypothesis card — frozen reference for what the student is fixing */}
+                  <WorkingHypothesisCard
+                    diagnosisResult={diagnosisResult}
+                    observedBehavior={observedBehavior}
+                    setObservedBehavior={setObservedBehavior}
+                    workingHypothesis={workingHypothesis}
+                    setWorkingHypothesis={setWorkingHypothesis}
+                    hypothesisHistory={hypothesisHistory}
+                    setHypothesisHistory={setHypothesisHistory}
+                    draftHypothesis={draftHypothesis}
+                    setDraftHypothesis={setDraftHypothesis}
+                    hypothesisCardEditing={false}
+                    setHypothesisCardEditing={() => {}}
+                    hypothesisCommitted={true}
+                    isLoading={isLoading}
+                    onHypothesisSubmit={() => {}}
+                    onUnsure={() => {}}
+                    onCommit={() => {}}
+                  />
 
-              {/*
-                TODO (Step 8): Add retrospective panel here, shown when
-                sessionSummary is set (i.e. after a correct fix verdict).
-                Data available: hypothesisHistory, sessionSummary.
-              */}
+                  <ChatHistory
+                    conversationHistory={conversationHistory}
+                    isLoading={isLoading}
+                    chatEndRef={chatEndRef}
+                  />
 
-              <ChatHistory
-                conversationHistory={conversationHistory}
-                isLoading={isLoading}
-                chatEndRef={chatEndRef}
-              />
+                  {/* Chat input — student can ask follow-up questions while fixing */}
+                  {/* Note: uses diagnose-hypothesis mode for now; a dedicated fix-chat
+                      mode could be added in a future iteration for better context */}
+                  <div className="flex gap-2 mt-4">
+                    <textarea
+                      className="flex-1 bg-white border border-zinc-300 rounded-md p-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 resize-none disabled:opacity-50"
+                      rows={2}
+                      placeholder="Ask a question about your fix…"
+                      value={studentReply}
+                      disabled={isLoading}
+                      onChange={(e) => setStudentReply(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendReply();
+                        }
+                      }}
+                    />
+                    <button
+                      className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-md transition self-end"
+                      onClick={handleSendReply}
+                      disabled={isLoading || !studentReply.trim()}
+                    >
+                      Send
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

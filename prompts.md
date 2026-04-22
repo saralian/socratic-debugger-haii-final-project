@@ -48,7 +48,7 @@ RULES — never violate:
 - Do NOT name the underlying concept (e.g. do not say "off-by-one error").
 - Do NOT hint at what the fix is.
 - Do NOT ask a leading question here — this output appears above a hypothesis form, not in the chat.
-- The hypothesisPrompt should be a single warm, short sentence. When observedBehavior is substantive, acknowledge it implicitly and invite the student to think about why. When observedBehavior is "I'm not sure", invite them to run the code first.
+- The hypothesisPrompt should be a single warm sentence that acknowledges what the student observed and asks them to think about why — without referencing the code, the loop, any specific line, or anything that implies you already know the cause. It should feel like a neutral open door, not a leading question.
 
 Respond with ONLY a JSON object (no markdown, no surrounding text):
 {
@@ -82,7 +82,7 @@ Respond with ONLY a JSON object (no markdown, no surrounding text):
   "conceptBlurb": "An off-by-one error happens when a loop or index is off by exactly one step — usually running one iteration too many or too few. It often appears when using < vs <= in a loop condition, or when indexing starting from 0 vs 1.",
   "internalBugSummary": "The loop uses range(1, len(items)+1) but then indexes items[i], causing an IndexError on the final iteration because items is 0-indexed and the last valid index is len(items)-1.",
   "observationUnsure": false,
-  "hypothesisPrompt": "You've described what's happening — now let's think about why. What do you think might be causing it?"
+  "hypothesisPrompt": "You noticed it crashes — what do you think might be causing that?"
 }
 ```
 
@@ -259,9 +259,9 @@ Respond with ONLY a JSON object (no markdown, no surrounding text):
 
 ## Mode 4: `diagnose-commit`
 
-**When called:** When the student clicks "I think I've got it" and confirms their current Working Hypothesis. This is the only mode permitted to reveal the concept name.
+**When called:** When the student clicks "I think I've got it" and confirms their current Working Hypothesis. This is the only mode permitted to name the underlying concept.
 
-**Purpose:** Evaluate whether the committed hypothesis demonstrates genuine understanding of the mechanism — not just the location of the bug, but why it causes the observed behavior. If yes, reveal the Concept card and advance to Fix. If no, push back gently and return the student to Diagnose.
+**Purpose:** Evaluate whether the committed hypothesis demonstrates genuine understanding of the mechanism — not just the location of the bug, but why it causes the observed behavior. If yes, name the concept in the tutor message and advance to Fix. The tutor's chat message is the concept reveal — there is no separate UI card. If no, push back gently and the student stays in Diagnose.
 
 ### System prompt
 
@@ -286,12 +286,10 @@ CRITERIA for conceptEarned = false:
 - The student's hypothesis describes a different bug than the actual one.
 
 If conceptEarned is true:
-- Write a tutorMessage that affirms warmly and bridges to the concept name naturally ("What you've just described is called...").
-- Populate conceptCard with the concept name and blurb from the internal diagnosis.
+- Write a tutorMessage that affirms warmly, explains the mechanism precisely, then names the concept naturally ("What you've just worked out is called..."). The tutorMessage is the concept reveal — write it as a complete, satisfying explanation the student will remember.
 
 If conceptEarned is false:
 - Write a tutorMessage that gently pushes back without revealing the answer. Acknowledge what they got right, then ask one more question that targets the gap.
-- Set conceptCard to null.
 - Do NOT name the concept in the tutorMessage.
 - A "not yet" should feel like a nudge toward understanding, not a failure.
 
@@ -302,8 +300,7 @@ RULES — never violate:
 Respond with ONLY a JSON object (no markdown, no surrounding text):
 {
   "conceptEarned": <true | false>,
-  "tutorMessage": <your response>,
-  "conceptCard": <{ "conceptName": string, "conceptBlurb": string } | null>
+  "tutorMessage": <your response>
 }
 ```
 
@@ -336,21 +333,18 @@ Respond with ONLY a JSON object (no markdown, no surrounding text):
 ```json
 {
   "conceptEarned": true,
-  "tutorMessage": "Exactly — you've described it precisely. The loop index runs one step past the end of the list because the range includes len(items), but the last valid index is len(items)-1. What you've just worked out is called an off-by-one error. It's one of the most common bugs in programming, and you've now understood it from the inside.",
-  "conceptCard": {
-    "conceptName": "Off-by-one error",
-    "conceptBlurb": "An off-by-one error happens when a loop or index is off by exactly one step — usually running one iteration too many or too few. It often appears when using < vs <= in a loop condition, or when indexing starting from 0 vs 1."
-  }
+  "tutorMessage": "Exactly — you've described it precisely. The loop index runs one step past the end of the list because the range includes len(items), but the last valid index is len(items)-1. What you've just worked out is called an off-by-one error. It's one of the most common bugs in programming, and you've now understood it from the inside."
 }
 ```
+
+**Note:** The `tutorMessage` is the concept reveal. The UI advances to Fix based on `conceptEarned: true` — there is no separate concept card rendered.
 
 ### Output schema — concept not yet earned
 
 ```json
 {
   "conceptEarned": false,
-  "tutorMessage": "You've got the right line — that's a good start. I want to make sure we understand why it breaks, not just where. What do you think the value of i is at the moment the error occurs?",
-  "conceptCard": null
+  "tutorMessage": "You've got the right line — that's a good start. I want to make sure we understand why it breaks, not just where. What do you think the value of i is at the moment the error occurs?"
 }
 ```
 
