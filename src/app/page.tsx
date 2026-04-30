@@ -645,6 +645,7 @@ interface CodePanelsProps {
   phase: Phase;
   diagnosisResult: DiagnosisResult | null;
   isLoading: boolean;
+  fixComplete?: boolean;
   onSubmitFix: () => void;
   onResetCode: () => void;
 }
@@ -657,6 +658,7 @@ function CodePanels({
   phase,
   diagnosisResult,
   isLoading,
+  fixComplete = false,
   onSubmitFix,
   onResetCode,
 }: CodePanelsProps) {
@@ -722,7 +724,7 @@ function CodePanels({
         <button
           className="bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-white font-medium px-5 py-2 rounded-md transition"
           onClick={onSubmitFix}
-          disabled={isLoading}
+          disabled={isLoading || fixComplete}
         >
           Submit fix
         </button>
@@ -731,9 +733,186 @@ function CodePanels({
   );
 }
 
+// ── LandingPage ────────────────────────────────────────────────────────────
+
+function LandingPage({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="min-h-screen bg-[var(--bg-base)]">
+      {/* Minimal top bar */}
+      <div className="border-b border-[var(--border)] bg-[var(--bg-surface)] px-8 py-3">
+        <div className="max-w-4xl mx-auto">
+          <span className="text-xs font-semibold tracking-widest uppercase text-[var(--text-muted)]">
+            Traceback
+          </span>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-8 py-14">
+        {/* Hero */}
+        <div className="mb-12">
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-3">
+            Traceback: A Code Reasoning Tutor
+          </h1>
+          <p className="text-lg text-[var(--text-secondary)]">
+            Learn to reason through code, not just fix it.
+          </p>
+        </div>
+
+        {/* About */}
+        <section className="mb-12 max-w-2xl">
+          <p className="text-[15px] text-[var(--text-secondary)] leading-relaxed">
+            <span className="font-medium text-[var(--text-primary)]">
+              Debugging is the vehicle, not the destination.
+              </span>
+              {" "}Traceback uses bugs as a concrete
+            anchor for developing deeper understanding of how code actually works — the kind of
+            understanding that transfers to new problems, not just fixes the current one. The
+            tutor won&apos;t give away answers, instead it asks questions that guide you to
+            reason through the problem yourself.
+          </p>
+        </section>
+
+        {/* Learning science cards */}
+        <section className="mb-12">
+          <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-4">
+            Grounded in learning science
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Guided Discovery */}
+            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-5">
+              <div className="w-8 h-8 rounded-md bg-[var(--accent-dim)] flex items-center justify-center mb-3">
+                <svg className="w-4 h-4" style={{ color: "var(--accent)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-[var(--text-primary)] mb-2">Guided Discovery</p>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Your lead your own acquisition of understanding. Rather than being told
+                what&apos;s wrong, you&apos;re nudged toward the right direction through
+                questions, arriving at the concept yourself.
+              </p>
+            </div>
+
+            {/* Cognitive Task Analysis */}
+            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-5">
+              <div className="w-8 h-8 rounded-md bg-[var(--accent-dim)] flex items-center justify-center mb-3">
+                <svg className="w-4 h-4" style={{ color: "var(--accent)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-[var(--text-primary)] mb-2">Cognitive Task Analysis</p>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                The three-phase flow (Submit → Diagnose → Fix) models expert debugging behavior:
+                observe, hypothesize, verify. Making those implicit expert steps explicit provides 
+                scaffolding for learners.
+              </p>
+            </div>
+
+            {/* Metacognitive Scaffolding */}
+            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-5">
+              <div className="w-8 h-8 rounded-md bg-[var(--accent-dim)] flex items-center justify-center mb-3">
+                <svg className="w-4 h-4" style={{ color: "var(--accent)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                  <polyline points="2 17 12 22 22 17" />
+                  <polyline points="2 12 12 17 22 12" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-[var(--text-primary)] mb-2">Metacognitive Scaffolding</p>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                The hypothesis revision stack and end-of-session retrospective make your 
+                evolving thinking visible as a concrete artifact, turning the
+                reasoning process itself into something the you can reflect on and learn from.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Phase overview */}
+        <section className="mb-12">
+          <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-4">
+            How a session works
+          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+            <div className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full bg-[var(--bg-elevated)] text-[var(--text-muted)] text-[10px] font-bold flex items-center justify-center shrink-0">1</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)]">Submit</span>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Paste your code and describe what you observe — what&apos;s the symptom?
+              </p>
+            </div>
+
+            <div className="hidden sm:flex items-center self-center text-[var(--text-muted)] shrink-0">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </div>
+
+            <div className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full bg-[var(--bg-elevated)] text-[var(--text-muted)] text-[10px] font-bold flex items-center justify-center shrink-0">2</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)]">Diagnose</span>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Form a hypothesis about the cause and refine it through Socratic dialogue.
+              </p>
+            </div>
+
+            <div className="hidden sm:flex items-center self-center text-[var(--text-muted)] shrink-0">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </div>
+
+            <div className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-md p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full bg-[var(--bg-elevated)] text-[var(--text-muted)] text-[10px] font-bold flex items-center justify-center shrink-0">3</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)]">Fix</span>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Apply your fix once you understand the root cause, with the tutor available for questions.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* AI disclosure */}
+        <section className="mb-12">
+          <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md px-4 py-3 flex gap-3 items-start">
+            <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4M12 8h.01" />
+            </svg>
+            <p className="text-sm text-[var(--text-secondary)]">
+              <span className="font-medium text-[var(--text-primary)]">A note on AI:</span>{" "}
+              Traceback is powered by Claude, an AI made by Anthropic. AI can make mistakes —
+              this tutor is designed to support your thinking, not replace it.
+            </p>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <div>
+          <button
+            onClick={onStart}
+            className="bg-[var(--accent)] hover:opacity-90 text-white font-semibold px-8 py-2.5 rounded-md transition text-sm"
+          >
+            Start Debugging →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Home ───────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  // ── Landing ──────────────────────────────────────────────────────────────
+  const [showLanding, setShowLanding] = useState(true);
+
   // ── Phase / code state ───────────────────────────────────────────────────
   const [phase, setPhase] = useState<Phase>("submit");
   const [code, setCode] = useState(SEED_CODE);
@@ -992,10 +1171,33 @@ export default function Home() {
     }).catch((err) => console.warn("Session summary call failed (non-fatal):", err));
   }
 
+  // ── Session reset ─────────────────────────────────────────────────────────
+
+  function resetSession() {
+    setPhase("submit");
+    setCode(SEED_CODE);
+    setOriginalCode("");
+    setStudentIntent("");
+    setObservedBehavior("");
+    setConversationHistory([]);
+    setStudentReply("");
+    setDiagnosisResult(null);
+    setWorkingHypothesis(null);
+    setHypothesisHistory([]);
+    setHypothesisCommitted(false);
+    setSessionSummary(null);
+    setDraftHypothesis({ possibleCause: "" });
+    setHypothesisCardEditing(true);
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+      {showLanding && (
+        <LandingPage onStart={() => setShowLanding(false)} />
+      )}
+      {!showLanding && <>
       {/* Phase banner */}
       <div className="border-b border-[var(--border)] bg-[var(--bg-surface)] px-8 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -1185,6 +1387,7 @@ export default function Home() {
               phase={phase}
               diagnosisResult={diagnosisResult}
               isLoading={isLoading}
+              fixComplete={!!sessionSummary}
               onSubmitFix={handleSubmitFix}
               onResetCode={() => setCode(originalCode)}
             />
@@ -1192,10 +1395,26 @@ export default function Home() {
             <div className="flex flex-col" style={{ width: "50%" }}>
               {sessionSummary ? (
                 // ── Session complete — replace right column with retrospective ──
-                <RetrospectivePanel
-                  hypothesisHistory={hypothesisHistory}
-                  sessionSummary={sessionSummary}
-                />
+                <>
+                  <RetrospectivePanel
+                    hypothesisHistory={hypothesisHistory}
+                    sessionSummary={sessionSummary}
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      className="bg-[var(--accent)] hover:opacity-90 text-white font-medium px-4 py-2 rounded-md transition text-sm"
+                      onClick={resetSession}
+                    >
+                      Debug new code
+                    </button>
+                    <button
+                      className="bg-transparent border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium px-4 py-2 rounded-md transition text-sm"
+                      onClick={() => { resetSession(); setShowLanding(true); }}
+                    >
+                      Return to home
+                    </button>
+                  </div>
+                </>
               ) : (
                 // ── Fix in progress — show hypothesis reference + chat ──────────
                 <>
@@ -1261,6 +1480,7 @@ export default function Home() {
           </div>
         )}
       </div>
+      </>}
     </main>
   );
 }
